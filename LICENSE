@@ -1,0 +1,40 @@
+MIT License
+
+Copyright (c) 2026 kanha vishwakarma
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+===========================================================================
+Third-party notices
+===========================================================================
+
+heic2any-lite reproduces the public API, option handling, colour conversion and
+error messages of heic2any, and the GIF output of gifshot/omggif as used by
+heic2any. Those projects are MIT licensed:
+
+- heic2any: Copyright (c) 2020 Alex Corvi (MIT License)
+  https://github.com/alexcorvi/heic2any
+- gifshot: Copyright (c) 2017 Yahoo Inc. (MIT License)
+  https://github.com/yahoo/gifshot
+- omggif: Copyright (c) 2013 Dean McNamee (MIT License)
+  https://github.com/deanm/omggif
+
+src/gif/neuQuant.ts is derived from the NeuQuant Neural-Net Quantization
+Algorithm, Copyright (c) 1994 Anthony Dekker, used under its original terms:
+the copyright notice must remain intact (see the header of that file).

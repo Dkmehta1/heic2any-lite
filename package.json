@@ -1,0 +1,74 @@
+{
+  "name": "heic2any-lite",
+  "version": "1.0.0",
+  "description": "Convert HEIC/HEIF images to PNG, JPEG or GIF in the browser. Drop-in replacement for heic2any: ~10x smaller, no dependencies, pure TypeScript HEVC decoder.",
+  "license": "MIT",
+  "author": "kanha vishwakarma",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dkmehta1/heic2any-lite.git"
+  },
+  "homepage": "https://github.com/Dkmehta1/heic2any-lite#readme",
+  "bugs": {
+    "url": "https://github.com/Dkmehta1/heic2any-lite/issues"
+  },
+  "keywords": [
+    "heic",
+    "heif",
+    "hevc",
+    "png",
+    "jpeg",
+    "gif",
+    "image",
+    "conversion",
+    "heic2any"
+  ],
+  "main": "dist/heic2any.js",
+  "module": "dist/esm/index.mjs",
+  "types": "dist/types/index.d.ts",
+  "unpkg": "dist/heic2any.min.js",
+  "jsdelivr": "dist/heic2any.min.js",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.mjs",
+      "require": "./dist/heic2any.js",
+      "default": "./dist/esm/index.mjs"
+    },
+    "./dist/heic2any.js": "./dist/heic2any.js",
+    "./dist/heic2any.min.js": "./dist/heic2any.min.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "node build.mjs && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "jest",
+    "test:dist": "node test-dist/umd.test.cjs && node test-dist/esm.test.mjs",
+    "test:browser": "node test-dist/browser.test.mjs",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build && npm run test:dist"
+  },
+  "devDependencies": {
+    "@babel/core": "7.29.7",
+    "@babel/preset-env": "7.29.7",
+    "@babel/preset-typescript": "7.29.7",
+    "@types/jest": "30.0.0",
+    "@types/node": "26.1.1",
+    "babel-jest": "29.7.0",
+    "esbuild": "0.28.1",
+    "heic2any": "^0.0.4",
+    "jest": "29.7.0",
+    "jest-environment-jsdom": "29.7.0",
+    "playwright-core": "^1.64.1",
+    "typescript": "5.9.3"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  }
+}
