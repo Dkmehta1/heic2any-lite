@@ -15,8 +15,15 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 
 const here = (p) => fileURLToPath(new URL(p, import.meta.url));
-// the original package (devDependency heic2any@0.0.4), or a path given on the command line
-const ORIGINAL = process.argv[2] ?? createRequire(import.meta.url).resolve('heic2any/dist/heic2any.min.js');
+// the original package if installed (`npm i --no-save heic2any@0.0.4`), or a path given on the command line
+function findOriginal() {
+  try {
+    return createRequire(import.meta.url).resolve('heic2any/dist/heic2any.min.js');
+  } catch {
+    return '';
+  }
+}
+const ORIGINAL = process.argv[2] ?? findOriginal();
 const sample = readFileSync(here('../src/__fixtures__/sample.heic'));
 
 /** Payload of the only box of this type in the fixture (it has a single coded image). */
