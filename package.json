@@ -1,6 +1,6 @@
 {
   "name": "heic2any-lite",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Convert HEIC/HEIF images to PNG, JPEG or GIF in the browser. Drop-in replacement for heic2any: ~10x smaller, no dependencies, pure TypeScript HEVC decoder.",
   "license": "MIT",
   "author": "kanha vishwakarma",
