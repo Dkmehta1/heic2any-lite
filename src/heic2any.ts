@@ -17,30 +17,65 @@ export interface Heic2AnyOptions {
 
 const SUPPORTED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif'];
 
+type WorkerModule = typeof import('./worker/workerDecoder');
+
+/** The worker module, or null without Worker support or if its chunk fails to load. */
+async function loadWorkerModule(): Promise<WorkerModule | null> {
+  if (typeof Worker === 'undefined') return null;
+  try {
+    return await import('./worker/workerDecoder');
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Decodes off the main thread when the browser supports Web Workers (like heic2any), and on
  * the main thread otherwise or if the worker cannot start (e.g. a restrictive CSP).
  * The worker code is only downloaded on the first conversion.
  */
 async function decode(buffer: ArrayBuffer): Promise<RgbaImage[]> {
-  if (typeof Worker !== 'undefined') {
-    let workerModule: typeof import('./worker/workerDecoder') | null = null;
+  const workerModule = await loadWorkerModule();
+  if (workerModule) {
     try {
-      workerModule = await import('./worker/workerDecoder');
-    } catch {
-      workerModule = null; // chunk failed to load: fall back below
-    }
-    if (workerModule) {
-      try {
-        return await workerModule.decodeInWorker(buffer);
-      } catch (e) {
-        if (!(e instanceof workerModule.WorkerUnavailableError)) throw e;
-      }
+      return await workerModule.decodeInWorker(buffer);
+    } catch (e) {
+      if (!(e instanceof workerModule.WorkerUnavailableError)) throw e;
     }
   }
   // main-thread fallback: the decoder is only downloaded here when no worker could be used
   const { decodeHeicToRgba } = await import('./decodeHeic');
   return decodeHeicToRgba(buffer);
+}
+
+/**
+ * Encodes with the library's own PNG encoder (src/png): the same pixels as the canvas would
+ * write, in a much smaller file. Strips of the image are compressed on several workers at once;
+ * without workers they run here, pausing between strips so the page stays responsive.
+ * Resolves with null when this browser cannot run the encoder (no CompressionStream).
+ */
+async function encodePngFile(image: RgbaImage): Promise<Blob | null> {
+  const [{ canEncodePng, encodePng, encodePngStrip }, { createYielder }, workerModule] = await Promise.all([
+    import('./png/encodePng'),
+    import('./yielder'),
+    loadWorkerModule(),
+  ]);
+  if (!canEncodePng()) return null;
+  const { yieldNow, dispose } = createYielder(true);
+  const here = (job: Parameters<typeof encodePngStrip>[0]) => yieldNow().then(() => encodePngStrip(job));
+  try {
+    if (!workerModule) return await encodePng(image, { runStrip: here });
+    return await encodePng(image, {
+      concurrency: workerModule.poolSize(),
+      runStrip: (job) =>
+        workerModule.encodePngStripInWorker(job).catch((e: unknown) => {
+          if (e instanceof workerModule.WorkerUnavailableError) return here(job);
+          throw e;
+        }),
+    });
+  } finally {
+    dispose();
+  }
 }
 
 /** Detects files that browsers can already display (same signatures as heic2any). */
@@ -64,9 +99,27 @@ function browserReadableType(buffer: ArrayBuffer): string | false {
   }
 }
 
-function imageToBlob(image: RgbaImage, toType: string, quality: number): Promise<Blob> {
+/** The type heic2any produces for a `toType` option: unsupported types give PNG. */
+function outputType(toType: string): string {
+  return SUPPORTED_MIME_TYPES.indexOf(toType) === -1 ? 'image/png' : toType;
+}
+
+async function imageToBlob(image: RgbaImage, toType: string, quality: number): Promise<Blob> {
+  toType = outputType(toType);
+  if (toType === 'image/png') {
+    let png: Blob | null = null;
+    try {
+      png = await encodePngFile(image);
+    } catch {
+      png = null; // unexpected encoder failure: let the canvas encode this one
+    }
+    if (png) return png;
+  }
+  return canvasToBlob(image, toType, quality);
+}
+
+function canvasToBlob(image: RgbaImage, toType: string, quality: number): Promise<Blob> {
   if (quality > 1 || quality < 0) quality = 0.92;
-  if (SUPPORTED_MIME_TYPES.indexOf(toType) === -1) toType = 'image/png';
   return new Promise((resolve, reject) => {
     let canvas: HTMLCanvasElement | null = null;
     try {

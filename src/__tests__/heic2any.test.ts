@@ -76,6 +76,27 @@ describe('heic2any (drop-in API)', () => {
     expect(encoded[0].firstPixel[3]).toBe(255);
   });
 
+  it('encodes PNG with its own lossless encoder, not the canvas, when CompressionStream exists', async () => {
+    const g = globalThis as { CompressionStream?: unknown };
+    g.CompressionStream = (await import('stream/web')).CompressionStream;
+    try {
+      for (const toType of ['image/png', 'image/webp']) {
+        const out = (await heic2any({ blob: sampleBlob(), toType })) as Blob;
+        expect(out.type).toBe('image/png');
+        const bytes = await new Promise<Uint8Array>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
+          reader.readAsArrayBuffer(out);
+        });
+        expect([...bytes.subarray(1, 4)]).toEqual([0x50, 0x4e, 0x47]); // "PNG"
+        expect(bytes[8 + 8 + 9]).toBe(2); // IHDR colour type: RGB (opaque photo, no alpha channel)
+      }
+      expect(encoded).toEqual([]);
+    } finally {
+      delete g.CompressionStream;
+    }
+  });
+
   it('passes JPEG type and quality to the canvas encoder', async () => {
     const out = (await heic2any({ blob: sampleBlob(), toType: 'image/jpeg', quality: 0.8 })) as Blob;
     expect(out.type).toBe('image/jpeg');

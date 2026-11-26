@@ -129,7 +129,8 @@ try {
   assert.equal(await tab.evaluate(() => window.__workers), 0, 'loading the script must not start a worker');
   const fresh = await convertAll(tab, 'newLib');
   console.log('worker  :', JSON.stringify(fresh));
-  assert.equal(fresh.workersUsed, 1, 'decoding runs in one shared worker');
+  // one worker decodes; PNG strips also use a small pool (up to one per core minus one, at most 8)
+  assert.ok(fresh.workersUsed >= 1 && fresh.workersUsed <= 8, 'decoding and PNG encoding run in a small shared worker pool');
   assert.deepEqual(fresh.dims, [800, 600]);
   assert.equal(fresh.png.type, 'image/png');
   assert.equal(fresh.jpeg.type, 'image/jpeg');
