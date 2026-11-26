@@ -135,5 +135,5 @@ npm run test:browser  # real Edge/Chrome: worker, CSP fallback, hardware-decoder
 
 ## License
 
-MIT © kanha vishwakarma. It reproduces the API of [heic2any](https://github.com/alexcorvi/heic2any) and the GIF
+MIT © Darshit Mehta & kanha vishwakarma. It reproduces the API of [heic2any](https://github.com/alexcorvi/heic2any) and the GIF
 output of gifshot/omggif (all MIT). See [LICENSE](LICENSE) for the third-party notices.
