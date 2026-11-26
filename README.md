@@ -8,7 +8,8 @@ with no dependencies and no WebAssembly.
 
 |                         | `heic2any` 0.0.4                    | `heic2any-lite`                                  |
 | ----------------------- | ----------------------------------- | --------------------------------------------------- |
-| Size (minified)         | 1.35 MB                             | 116 KB; the ESM entry is ~6 KB, the rest loads on first use |
+| Size (minified)         | 1.35 MB                             | 127 KB; the ESM entry is ~6 KB, the rest loads on first use |
+| PNG files               | canvas encoder (RGBA, light compression) | own lossless encoder: same pixels, ~35% smaller files |
 | On import               | starts a Web Worker, sets `window.__heic2any__worker` | does nothing (SSR-safe, tree-shakeable) |
 | Decoding                | Web Worker (libde265 via asm.js)    | Web Worker, started on first use, closed after 30 s idle |
 | CSP blocks `blob:` workers | conversion fails                 | falls back to the main thread, yielding so the page stays responsive |
@@ -112,6 +113,29 @@ inside heic2any 0.0.4 mis-decodes some samples along sharp edges (about 4% of sa
 by up to 22 luma / 63 chroma levels). This library matches the browser's own hardware HEVC decoder exactly, and
 `npm run test:browser` checks that. In practice the two outputs look the same (PSNR ≈ 45 dB).
 
+### PNG size
+
+heic2any makes PNGs with `canvas.toBlob()`. Browsers tune that encoder for speed: it always stores an alpha
+channel and compresses lightly. This library encodes PNGs itself, in the worker. It writes RGB when every pixel
+is opaque (always true for HEIC photos) and picks the best PNG filter for every row. Deflate is the browser's
+own `CompressionStream`, so no compression code is bundled. The pixels are exactly the same. Only the file is
+smaller:
+
+| Photo (Edge 158)        | HEIC    | PNG from canvas | PNG from this library |
+| ----------------------- | ------- | --------------- | --------------------- |
+| iPhone, 5712×4284       | 2.47 MB | 29.0 MB         | 19.1 MB (−34%)        |
+| 4000×3000               | 1.44 MB | 19.0 MB         | 12.5 MB (−34%)        |
+
+This compression needs more CPU than the canvas's, so the image is cut into strips that are compressed in
+parallel on a small worker pool (one worker per core minus one, at most 8). The strips are joined into the single
+stream PNG requires, so the file is byte-identical whatever the core count. For the 24 MP photo above, encoding
+takes about 1.4 s with 8 workers, about the same as the canvas, and about 2.6 s on a 4-core device (canvas: about
+1 s). Decoding the HEIC (3 to 5 s) is unchanged. Browsers without `CompressionStream`
+(before Chrome 80, Firefox 113 and Safari 16.4) get the canvas PNG as before. A PNG is still several times
+bigger than the HEIC, because the HEIC is lossy and the PNG is not. If you don't need lossless output,
+`toType: 'image/jpeg'` at the default quality of 0.92 is about the size of the HEIC (3.05 MB for the first
+photo).
+
 ## Content-Security-Policy
 
 Decoding runs in a Web Worker created from a `blob:` URL, as heic2any's does. If your CSP has `worker-src`
@@ -123,7 +147,7 @@ the main thread.
 
 ```sh
 npm install
-npm test              # unit tests (jest): HEIF parser, HEVC decoder, GIF encoder, worker protocol, API
+npm test              # unit tests (jest): HEIF parser, HEVC decoder, PNG and GIF encoders, worker protocol, API
 npm run typecheck
 npm run build         # dist/esm (ESM), dist/heic2any.js + .min.js (UMD), dist/types
 npm run test:dist     # the built UMD and ESM files, in Node
